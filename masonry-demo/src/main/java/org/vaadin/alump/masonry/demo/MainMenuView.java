@@ -49,6 +49,15 @@ public class MainMenuView extends VerticalLayout implements View {
             }
         });
         addComponent(dndTests);
+
+      Button sizerTests = new Button("Dynamic styles Grid Size Demo", new Button.ClickListener() {
+        @Override
+        public void buttonClick(Button.ClickEvent event) {
+          UI.getCurrent().getNavigator().navigateTo(GridSizerTestsView.VIEW_NAME);
+        }
+      });
+      addComponent(sizerTests);
+
     }
 
     @Override

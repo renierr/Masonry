@@ -48,6 +48,9 @@ public class MasonryPanel extends ComplexPanel {
      */
     public static final String RENDERING_CLASSNAME = "masonry-rendering";
 
+    public static final String GRID_SIZE_CLASSNAME = "masonry-grid-sizer";
+
+
 	public MasonryPanel() {
 
         setElement(Document.get().createDivElement());
@@ -57,6 +60,12 @@ public class MasonryPanel extends ComplexPanel {
         if(msnry != null) {
             return;
         }
+      // masonry uses first element for sizing if column with is 0 - so we create one to allow different percentage sizes
+      if (columnWidth == 0) {
+        Element sizer = Document.get().createDivElement();
+        sizer.addClassName(GRID_SIZE_CLASSNAME);
+        getElement().appendChild(sizer);
+      }
         msnry = initializeMasonry(getElement(), createMasonryProperties(columnWidth).getJavaScriptObject());
     }
 

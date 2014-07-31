@@ -1,0 +1,239 @@
+package org.vaadin.alump.masonry.demo;
+
+import com.vaadin.data.Property;
+import com.vaadin.event.LayoutEvents;
+import com.vaadin.navigator.View;
+import com.vaadin.navigator.ViewChangeListener;
+import com.vaadin.server.Page;
+import com.vaadin.ui.Button;
+import com.vaadin.ui.CheckBox;
+import com.vaadin.ui.Component;
+import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Notification;
+import com.vaadin.ui.Panel;
+import com.vaadin.ui.UI;
+import com.vaadin.ui.VerticalLayout;
+import org.vaadin.alump.masonry.MasonryLayout;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+/**
+ * Base test that covers most of the features
+ */
+public class GridSizerTestsView extends VerticalLayout implements View {
+
+    public final static String VIEW_NAME = GridSizerTestsView.class.getSimpleName();
+
+    private MasonryLayout layout;
+    private int index = 0;
+
+    private List<Component> itemsAdded = new ArrayList<Component>();
+
+    private Random rand = new Random(0xDEADBEEF);
+
+    public GridSizerTestsView() {
+        setSizeFull();
+
+        HorizontalLayout buttonLayout = new HorizontalLayout();
+        buttonLayout.setSpacing(true);
+        buttonLayout.setMargin(true);
+        addComponent(buttonLayout);
+
+        Button back = new Button("←", new Button.ClickListener() {
+
+            @Override
+            public void buttonClick(Button.ClickEvent clickEvent) {
+                UI.getCurrent().getNavigator().navigateTo(MainMenuView.VIEW_NAME);
+            }
+        });
+        back.setDescription("Returns to main menu");
+        buttonLayout.addComponent(back);
+
+        Button addItem = new Button("Add item", new Button.ClickListener() {
+
+            @Override
+            public void buttonClick(Button.ClickEvent clickEvent) {
+                createAndAddItem(index++, false);
+            }
+        });
+        addItem.setDescription("Adds new item");
+        buttonLayout.addComponent(addItem);
+
+        Button addDwItem = new Button("Add DW", new Button.ClickListener() {
+
+            @Override
+            public void buttonClick(Button.ClickEvent clickEvent) {
+                createAndAddItem(2, true);
+            }
+        });
+        addDwItem.setDescription("Adds double wide component");
+        buttonLayout.addComponent(addDwItem);
+
+        Button removeItem = new Button("Remove", new Button.ClickListener() {
+
+            @Override
+            public void buttonClick(Button.ClickEvent clickEvent) {
+                if(itemsAdded.size() > 0) {
+                    int remove = rand.nextInt(itemsAdded.size());
+                    Component removed = itemsAdded.get(remove);
+                    itemsAdded.remove(removed);
+                    layout.removeComponent(removed);
+                }
+            }
+        });
+        removeItem.setDescription("Removes random component.");
+        buttonLayout.addComponent(removeItem);
+
+        Button removeItems = new Button("Remove all", new Button.ClickListener() {
+
+            @Override
+            public void buttonClick(Button.ClickEvent clickEvent) {
+                layout.removeAllComponents();
+                itemsAdded.clear();
+            }
+        });
+        removeItems.setDescription("Removes all components.");
+        buttonLayout.addComponent(removeItems);
+
+        Button requestLayout = new Button("Re-layout", new Button.ClickListener() {
+
+            @Override
+            public void buttonClick(Button.ClickEvent clickEvent) {
+                layout.requestLayout();
+            }
+        });
+        requestLayout.setDescription("Will ask client side to relayout. Usually used as workaround for issues.");
+        buttonLayout.addComponent(requestLayout);
+
+        CheckBox clickListener = new CheckBox("Close when clicked");
+        clickListener.setDescription("When true will close items when clicked.");
+        clickListener.setImmediate(true);
+        clickListener.addValueChangeListener(clickListenerCBListener);
+        buttonLayout.addComponent(clickListener);
+
+        Button reOrder = new Button("Shuffle", new Button.ClickListener() {
+
+            @Override
+            public void buttonClick(Button.ClickEvent clickEvent) {
+                shuffleLayout();
+            }
+        });
+        reOrder.setDescription("Shuffles all items to new random order");
+        buttonLayout.addComponent(reOrder);
+
+        CheckBox paperStyle = new CheckBox("Paper style");
+        paperStyle.setDescription("Use fancier paper styling");
+        paperStyle.setValue(true);
+        paperStyle.setImmediate(true);
+        paperStyle.addValueChangeListener(new Property.ValueChangeListener() {
+
+            @Override
+            public void valueChange(Property.ValueChangeEvent event) {
+                boolean value = (Boolean)event.getProperty().getValue();
+                if(value) {
+                    layout.addStyleName(MasonryLayout.MASONRY_PAPER_SHADOW_STYLENAME);
+                } else {
+                    layout.removeStyleName(MasonryLayout.MASONRY_PAPER_SHADOW_STYLENAME);
+                }
+            }
+        });
+        buttonLayout.addComponent(paperStyle);
+
+        Button postIt = new Button("PostIt", new Button.ClickListener() {
+
+            @Override
+            public void buttonClick(Button.ClickEvent clickEvent) {
+                Component note = ItemGenerator.createPostItNote();
+                layout.addComponent(note);
+                itemsAdded.add(note);
+            }
+        });
+        postIt.setDescription("Add post it note styled component");
+        buttonLayout.addComponent(postIt);
+
+        Panel panel = new Panel();
+        panel.addStyleName("masonry-panel");
+        panel.setSizeFull();
+        addComponent(panel);
+        setExpandRatio(panel, 1.0f);
+
+        layout = new MasonryLayout(0); // demo with class width definition
+        layout.addStyleName(MasonryLayout.MASONRY_PAPER_SHADOW_STYLENAME);
+        layout.addStyleName("demo-masonry");
+        layout.setWidth("100%");
+        panel.setContent(layout);
+
+        for(index = 0; index < 5; ++index) {
+            createAndAddItem(index, false);
+        }
+
+    }
+
+    private void shuffleLayout() {
+        // Generate new order
+        List<Integer> indexList = new ArrayList<Integer>();
+        for(int i = 0; i < layout.getComponentCount(); ++i) {
+            indexList.add(i);
+        }
+        Collections.shuffle(indexList, rand);
+
+        // Read new order
+        Map<Component,String> wrapperStyleNames = new HashMap<Component,String>();
+        List<Component> newOrder = new ArrayList<Component>();
+        for(int index : indexList) {
+            Component component = layout.getComponent(index);
+            newOrder.add(component);
+            wrapperStyleNames.put(component, layout.getComponentWrapperStyleName(component));
+        }
+
+        // Apply new order
+        for(int newIndex = 0; newIndex < newOrder.size(); ++newIndex) {
+            Component component = newOrder.get(newIndex);
+            layout.addComponent(component, wrapperStyleNames.get(component), newIndex);
+        }
+    }
+
+    private void createAndAddItem(int index, boolean doubleWidth) {
+        Component itemLayout = ItemGenerator.createItem(index);
+
+        // Just using data to remember the width, this to help when reordering
+        layout.addComponent(itemLayout, doubleWidth ? MasonryLayout.DOUBLE_WIDE_STYLENAME : null);
+
+        itemsAdded.add(itemLayout);
+    }
+
+    private LayoutEvents.LayoutClickListener layoutClickListener = new LayoutEvents.LayoutClickListener() {
+
+        @Override
+        public void layoutClick(LayoutEvents.LayoutClickEvent event) {
+            Component child = event.getChildComponent();
+            if(child != null) {
+                layout.removeComponent(child);
+            } else {
+                Notification.show("Layout clicked!");
+            }
+        }
+    };
+
+    private Property.ValueChangeListener clickListenerCBListener = new Property.ValueChangeListener() {
+        @Override
+        public void valueChange(Property.ValueChangeEvent event) {
+            boolean value = (Boolean)event.getProperty().getValue();
+            if(value) {
+                layout.addLayoutClickListener(layoutClickListener);
+            } else {
+                layout.removeLayoutClickListener(layoutClickListener);
+            }
+        }
+    };
+
+    @Override
+    public void enter(ViewChangeListener.ViewChangeEvent event) {
+        Page.getCurrent().setTitle("MasonryLayout Basic Tests");
+    }
+}

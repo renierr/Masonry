@@ -31,5 +31,6 @@ public class MasonryDemoUI extends UI
         navigator.addView(MainMenuView.VIEW_NAME, new MainMenuView());
         navigator.addView(BasicTestsView.VIEW_NAME, new BasicTestsView());
         navigator.addView(DnDTestsView.VIEW_NAME, new DnDTestsView());
+        navigator.addView(GridSizerTestsView.VIEW_NAME, new GridSizerTestsView());
     }
 }
