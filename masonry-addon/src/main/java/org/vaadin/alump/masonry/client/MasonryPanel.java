@@ -142,7 +142,11 @@ public class MasonryPanel extends ComplexPanel {
 
     protected static JSONObject createMasonryProperties(int columnWidth) {
         JSONObject obj = new JSONObject();
-        obj.put("columnWidth", new JSONNumber(columnWidth));
+        if (columnWidth == 0) {
+          obj.put("columnWidth", new JSONString("." + GRID_SIZE_CLASSNAME));
+        } else {
+          obj.put("columnWidth", new JSONNumber(columnWidth));
+        }
         obj.put("itemSelector", new JSONString("."  + ITEM_CLASSNAME));
         return obj;
     }
